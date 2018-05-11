@@ -1,5 +1,6 @@
 name: cvnd-captioning
 channels:
+  - pytorch
   - conda-forge
   - defaults
 dependencies:
@@ -58,6 +59,7 @@ dependencies:
   - clyent=1.2.2=py36h7e57e65_1
   - cryptography=2.2.2=py36h14c3975_0
   - cycler=0.10.0=py36h93f1223_0
+  - cython=0.28.2=py36h14c3975_0
   - cytoolz=0.9.0.1=py36h14c3975_0
   - dask=0.17.4=py36_0
   - dask-core=0.17.4=py36_0
@@ -98,6 +100,7 @@ dependencies:
   - nbpresent=3.0.2=py36h5f95a39_1
   - ncurses=6.1=hf484d3e_0
   - networkx=2.1=py36_0
+  - ninja=1.8.2=py36h6bb024c_1
   - nltk=3.3.0=py36_0
   - numpy=1.14.2=py36hdbf6ddf_1
   - olefile=0.45.1=py36_0
@@ -130,6 +133,7 @@ dependencies:
   - tblib=1.3.2=py36h34cf8b6_0
   - tk=8.6.7=hc745277_3
   - toolz=0.9.0=py36_0
+  - tqdm=4.23.0=py36_0
   - urllib3=1.22=py36hbe7ace6_0
   - wheel=0.31.0=py36_0
   - widgetsnbextension=3.2.1=py36_0
@@ -137,7 +141,8 @@ dependencies:
   - yaml=0.1.7=had09818_2
   - zict=0.1.3=py36h3a3bf81_0
   - zlib=1.2.11=ha838bed_2
+  - cuda91=1.0=h4c16780_0
+  - pytorch=0.4.0=py36_cuda9.1.85_cudnn7.1.2_1
+  - torchvision=0.2.1=py36_1
   - pip:
-    - cython==0.28.2
     - pycocotools==2.0
-

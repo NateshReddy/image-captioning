@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class EncoderCNN(nn.Module):
@@ -10,9 +11,11 @@ class EncoderCNN(nn.Module):
         for param in resnet.parameters():
             param.requires_grad_(False)
         
+        # The last fully connected layer is used for prediction, so we drop it.
         modules = list(resnet.children())[:-1]
         self.resnet = nn.Sequential(*modules)
         self.embed = nn.Linear(resnet.fc.in_features, embed_size)
+        # self.bn = nn.BatchNorm1d(embed_size, momentum=0.01)
 
     def forward(self, images):
         features = self.resnet(images)
@@ -23,10 +26,29 @@ class EncoderCNN(nn.Module):
 
 class DecoderRNN(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size, num_layers=1):
-        pass
-    
+        super(DecoderRNN, self).__init__()
+
+        self.embed = nn.Embedding(vocab_size, embed_size)
+        self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
+        self.linear = nn.Linear(hidden_size, vocab_size)
+
     def forward(self, features, captions):
-        pass
+        # As described in the notebook, the sequences are padded to a fixed length.
+        # We do need their respective lengths anyways.
+        batch_size = features.shape[0]
+        padded_caption_length = captions.shape[1]
+        caption_lengths = [padded_caption_length] * batch_size
+
+        embeddings = self.embed(captions)
+        embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
+        packed = pack_padded_sequence(embeddings, caption_lengths, batch_first=True)
+        hiddens, _ = self.lstm(packed)
+        outputs = self.linear(hiddens[0])
+
+        # Reshape to the required outputs
+        outputs = outputs.view(batch_size, padded_caption_length, -1)
+
+        return outputs
 
     def sample(self, inputs, states=None, max_len=20):
         " accepts pre-processed image tensor (inputs) and returns predicted sentence (list of tensor ids of length max_len) "
