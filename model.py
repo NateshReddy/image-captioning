@@ -34,35 +34,36 @@ class DecoderRNN(nn.Module):
         self.vocab_size = vocab_size
 
         self.embed = nn.Embedding(vocab_size, embed_size)
-        self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, dropout=dropout, batch_first=True)
+        self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, 
+                            dropout=dropout if num_layers > 1 else 0,
+                            batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
         
         # TODO: Dig into nn.LogSoftmax() here
-        self.softmax = nn.LogSoftmax(dim=-1)
+        self.softmax = nn.Softmax(dim=2)
 
     def forward(self, features, captions):
-        captions = self.embed(captions)
+        batch_size = features.size(0)
         
-        # LSTM input requires an additional dimension
+        captions_without_end = captions[:, :-1]
+        captions = self.embed(captions_without_end)
+        
+        # Concatenate the features and caption inputs and feed to LSTM cell(s).
+        # Permutation is not required due to batch_first=True.
         features = features.unsqueeze(1)
-
-        # Leave out the start token and concatenate features and captions as inputs
-        captions_without_start_token = captions[:, 1:, :]
-        inputs = torch.cat((features, captions_without_start_token), 1)
+        inputs = torch.cat((features, captions), 1)
+        lstm_output, _ = self.lstm(inputs, None)
         
-        # packed = pack_padded_sequence(inputs, caption_lengths, batch_first=True)
-        # outputs, self.hidden = self.lstm(packed)
-        lstm_output, lstm_hidden = self.lstm(inputs)
-        
+        # Convert LSTM outputs to word predictions
         outputs = self.linear(lstm_output)
-        return self.softmax(outputs)
+        return outputs
 
     def sample(self, inputs, states=None, max_len=20, stop_idx=1):
         " accepts pre-processed image tensor (inputs) and returns predicted sentence (list of tensor ids of length max_len) "
         sentence = []
-        lstm_state = None       
+        lstm_state = None
         for _ in range(max_len):
-            lstm_out, states = self.lstm(inputs, lstm_state)
+            lstm_out, lstm_state = self.lstm(inputs, lstm_state)
             output = self.linear(lstm_out)
             
             # TODO: This should be superfluous ... check it.
@@ -70,7 +71,7 @@ class DecoderRNN(nn.Module):
 
             # Get the predicted word
             # TODO: Sample stochastically or perform a beam search
-            prediction = torch.argmax(output, dim=-1)
+            prediction = torch.argmax(output, dim=2)
             predicted_index = prediction.item()
             sentence.append(predicted_index)
             
