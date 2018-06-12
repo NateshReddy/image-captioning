@@ -17,12 +17,13 @@ class EncoderCNN(nn.Module):
         modules = list(resnet.children())[:-1]
         self.resnet = nn.Sequential(*modules)
         self.embed = nn.Linear(resnet.fc.in_features, embed_size)
-        # self.bn = nn.BatchNorm1d(embed_size, momentum=0.01)
+        self.bn = nn.BatchNorm1d(embed_size, momentum=0.01)
 
     def forward(self, images):
         features = self.resnet(images)
         features = features.view(features.size(0), -1)
         features = self.embed(features)
+        features = self.bn(features)
         return features
     
 
@@ -65,9 +66,6 @@ class DecoderRNN(nn.Module):
         for _ in range(max_len):
             lstm_out, lstm_state = self.lstm(inputs, lstm_state)
             output = self.linear(lstm_out)
-            
-            # TODO: This should be superfluous ... check it.
-            output = self.softmax(output)
 
             # Get the predicted word
             # TODO: Sample stochastically or perform a beam search
